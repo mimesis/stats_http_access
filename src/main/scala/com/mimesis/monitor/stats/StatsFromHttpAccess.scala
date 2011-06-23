@@ -1,5 +1,6 @@
 package com.mimesis.monitor.stats
 
+import java.util.Locale
 import org.joda.time.format.ISODateTimeFormat
 import java.io.FileOutputStream
 import java.nio.charset.Charset
@@ -18,39 +19,56 @@ import java.io.File
 
 object StatsFromHttpAccess {
 
-  val LogEntrySD = """^(\S+?)\s+-\s+-\s+(\[.*?\])\s+(.*?)\s+(\d+)\s+(\d+)\s+(\d+)""".r
-  val LogEntryS = """^(\S+?)\s+-\s+-\s+(\[.*?\])\s+(.*?)\s+(\d+)\s+(\d+)""".r
-  val MethodUrl = """^"(\w+)\s(\S+)\s(\S+)"$""".r
-  val dateParser = DateTimeFormat.forPattern("[dd/MMM/yyyy:HH:mm:ss Z]")
+  val LogEntrySD = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+)\s+(\d+).*""".r
+  val LogEntryS = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+).*""".r
+  val dateParser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z")
+  val dateParserFr = dateParser.withLocale(Locale.FRENCH)
+  val dateParserEn = dateParser.withLocale(Locale.ENGLISH)
+
   val statistics4size = new Statistics()
   val statistics4duration = new Statistics()
 
   def main(args: Array[String]): Unit = {
-    val outputRoot = new File(System.getProperty("/var/log/stats_http"))
+    val outputRoot = new File(System.getProperty("stats_http.data", "/var/log/stats_http/data"))
+    outputRoot.mkdirs()
 
     for (
       path <- args ;
       line <- Source.fromFile(new File(path), "UTF-8").getLines()
     ) {
       line match {
-        case LogEntrySD(host, date, methodUrl, status, size, duration) =>
-          analyseAccessLine(host, date, methodUrl, status, size, Option(duration))
-        case LogEntryS(host, date, methodUrl, status, size) =>
-          analyseAccessLine(host, date, methodUrl, status, size, None)
+        case LogEntrySD(host, identUser, authUser, date, method, url, protocol, status, size, duration) =>
+          analyseAccessLine(host, date, method, url, status, size, Option(duration))
+        case LogEntryS(host, identUser, authUser, date, method, url, protocol, status, size) =>
+          analyseAccessLine(host, date, method, url, status, size, None)
         case s if s.trim().length == 0 => () // ignore empty line
+        case s => System.err.println("bad format in " + path + " ignore " + s)
       }
     }
     storeInJsonFiles(outputRoot, MetricInfo("http_size", "B"), statistics4size.data)
     storeInJsonFiles(outputRoot, MetricInfo("http_duration", "microsecond"), statistics4duration.data)
   }
 
-  def analyseAccessLine(host : String, date : String, methodUrl : String, status : String, size : String, duration : Option[String]) = methodUrl match {
-    case MethodUrl(method, url, protocol) => {
-      val timestamp = dateParser.parseDateTime(date).withZone(DateTimeZone.UTC)
-      val key = status + " - " + url
-      statistics4size.append(key, size.toLong, timestamp)
-      duration.foreach{ d => statistics4duration.append(key, d.toLong, timestamp) }
+  def analyseAccessLine(host : String, date : String, method : String, url : String, status : String, size : String, duration : Option[String]) = {
+    println("date", date, "method", method)
+    val timestamp = toDateTime(date)
+    val key = status + " - " + url
+    statistics4size.append(key, toLong(size), timestamp)
+    duration.foreach{ d => statistics4duration.append(key, toLong(d), timestamp) }
+  }
+
+  private def toDateTime(s : String) : DateTime = {
+    try {
+      dateParserFr.parseDateTime(s).withZone(DateTimeZone.UTC)
+    } catch {
+      case t : IllegalArgumentException => dateParserEn.parseDateTime(s).withZone(DateTimeZone.UTC)
     }
+  }
+
+  private def toLong(s : String) = try {
+    if (s != "-") s.toLong else 0
+  } catch {
+    case t => 0
   }
 
   def groupByDay(v: Iterable[Statistic]) : Map[ReadableInstant, Iterable[Statistic]] = v.groupBy { _.interval.getStart.toDateMidnight() }
