@@ -1,0 +1,4 @@
+{ "bases" : [
+{ "label" : "zzz", "path" : "data/zzz" },
+{}
+] }
