@@ -26,3 +26,22 @@
 127.0.0.1 -  -  [06/juin/2011:14:18:27 +0000] "POST /service/v1/authentication/rpc HTTP/1.1" 400 91  6
 127.0.0.1 -  -  [06/juin/2011:14:18:33 +0000] "POST /service/v1/authentication/rpc HTTP/1.1" 400 91  6
 
+81.252.204.221 -  -  [22/Jun/2011:13:51:22 +0000] "POST /service/v1/comment/rpc HTTP/1.1" 200 71  16
+81.252.204.221 - - [22/Jun/2011:13:21:57 +0000] "GET /images/com/com-64-gris/en/not_fashionable.png HTTP/1.1" 200 4117 283044 "http://facet.web1.web.bmnation.net/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_7) AppleWebKit/534.30 (KHTML, like Gecko) Chrome/12.0.742.100 Safari/534.30"
+81.252.204.221 -  -  [22/Jun/2011:13:42:40 +0000] "POST /service/v1/facebook-user-data/rpc HTTP/1.1" 200 176  360
+81.252.204.221 -  -  [22/Jun/2011:13:42:41 +0000] "POST /service/v1/mark/rpc HTTP/1.1" 200 1311  16
+81.252.204.221 -  -  [22/Jun/2011:13:42:42 +0000] "POST /service/v1/facet/rpc HTTP/1.1" 200 5477  24
+81.252.204.221 -  -  [22/Jun/2011:13:42:42 +0000] "POST /service/v1/facebook-user-data/rpc HTTP/1.1" 200 176  432
+81.252.204.221 -  -  [22/Jun/2011:13:44:40 +0000] "POST /service/v1/facet/rpc HTTP/1.1" 200 5477  27
+81.252.204.221 -  -  [22/Jun/2011:13:44:40 +0000] "POST /service/v1/facet-resource/rpc HTTP/1.1" 200 242  152
+
+81.252.204.221 - - [22/Jun/2011:13:16:49 +0000] "GET /images/logo/header-logo-MN.png HTTP/1.1" 304 - 621 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
+81.252.204.221 - - [22/Jun/2011:13:16:49 +0000] "GET /images/pictos/sort.gif HTTP/1.1" 304 - 394 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
+81.252.204.221 - - [22/Jun/2011:13:16:49 +0000] "GET /images/logo/fb-button-22x22.jpg HTTP/1.1" 304 - 387 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
+81.252.204.221 - - [22/Jun/2011:13:16:49 +0000] "GET /images/background/background-menu_4x4.jpg HTTP/1.1" 304 - 388 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
+81.252.204.221 - - [22/Jun/2011:13:16:49 +0000] "GET /images/background/background-title-widget-4x4.png HTTP/1.1" 304 - 401 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
+81.252.204.221 - - [22/Jun/2011:13:16:49 +0000] "GET /images/pictos/sort-desc.gif HTTP/1.1" 304 - 505 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
+81.252.204.221 - - [22/Jun/2011:13:16:49 +0000] "GET /shared/js-config HTTP/1.1" 200 376 1892505 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
+81.252.204.221 - - [22/Jun/2011:13:16:52 +0000] "GET /js/locales/fr.json HTTP/1.1" 304 - 611 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
+81.252.204.221 - - [22/Jun/2011:13:16:53 +0000] "POST /brm/s.php HTTP/1.1" 200 25 6024 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
+81.252.204.221 - - [22/Jun/2011:13:16:53 +0000] "POST /rooms/room-list HTTP/1.1" 500 4552 1745398 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
