@@ -1,4 +1,4 @@
 { "bases" : [
-{ "label" : "zzz", "path" : "data/zzz" },
+{ "label" : "zzz", "path" : "tmp/stats_http.data" },
 {}
 ] }

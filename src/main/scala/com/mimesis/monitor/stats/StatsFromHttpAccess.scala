@@ -50,9 +50,12 @@ object StatsFromHttpAccess {
   }
 
   def analyseAccessLine(host : String, date : String, method : String, url : String, status : String, size : String, duration : Option[String]) = {
-    println("date", date, "method", method)
     val timestamp = toDateTime(date)
-    val key = status + " - " + url
+    val path = url.indexOf("?") match {
+      case -1 => url
+      case pos => url.substring(0, pos) + "?..."
+    }
+    val key = status + " - " + path
     statistics4size.append(key, toLong(size), timestamp)
     duration.foreach{ d => statistics4duration.append(key, toLong(d), timestamp) }
   }
