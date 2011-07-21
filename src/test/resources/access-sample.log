@@ -46,8 +46,6 @@
 81.252.204.221 - - [22/Jun/2011:13:16:53 +0000] "POST /brm/s.php HTTP/1.1" 200 25 6024 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
 81.252.204.221 - - [22/Jun/2011:13:16:53 +0000] "POST /rooms/room-list HTTP/1.1" 500 4552 1745398 "http://www.web1.web.bmnation.net/rooms" "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.24 Safari/535.1"
 
-81.252.204.221 - - [11/Jul/2011:15:13:30 +0000] "POST /brm/s.php HTTP/1.1" 200 25 52855 "http://www.platform.content.bmnation.net/l/agora/beach_bar" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.19) Gecko/20110420 Firefox/3.5.19"
-
 
 81.252.204.221 - - [12/Jul/2011:11:04:19 +0000] "GET /shared/js-user-data?_=1310468661091 HTTP/1.1" 200 1266 140949 "http://www.platform.content.bmnation.net/rooms" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Ubuntu/11.04 Chromium/12.0.742.112 Chrome/12.0.742.112 Safari/534.30"
 81.252.204.221 - - [12/Jul/2011:11:05:24 +0000] "GET /shared/js-user-data?_=1310468725774 HTTP/1.1" 200 1266 186456 "http://www.platform.content.bmnation.net/rooms" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.18) Gecko/20110614 Firefox/3.6.18"
@@ -132,4 +130,6 @@
 81.252.204.221 - - [12/Jul/2011:13:51:55 +0000] "GET /shared/js-user-data?_=1310478717209 HTTP/1.1" 200 1266 198241 "http://www.platform.content.bmnation.net/l/agora/christmas" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.18) Gecko/20110614 Firefox/3.6.18"
 81.252.204.221 - - [12/Jul/2011:15:35:50 +0000] "GET /shared/js-user-data?_=1310484951989 HTTP/1.1" 200 1223 3167556 "http://www.platform.content.bmnation.net/rooms" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.18) Gecko/20110614 Firefox/3.6.18"
 81.252.204.221 - - [12/Jul/2011:15:37:54 +0000] "GET /shared/js-user-data?_=1310485075413 HTTP/1.1" 200 1223 317027 "http://www.platform.content.bmnation.net/rooms" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.18) Gecko/20110614 Firefox/3.6.18"
+
+81.252.204.221 - - [11/Jul/2011:15:13:30 +0000] "POST /brm/s.php HTTP/1.1" 200 25 52855 "http://www.platform.content.bmnation.net/l/agora/beach_bar" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.19) Gecko/20110420 Firefox/3.5.19"
 
