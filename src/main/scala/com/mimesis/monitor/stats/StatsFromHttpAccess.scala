@@ -19,77 +19,29 @@ import java.io.File
 
 object StatsFromHttpAccess {
 
-  case class AccessData(host : String, timestamp : DateTime, method : String, url : String, status : String, size : Long, duration : Option[Long])
-  case class MetricInfo(name : String, unit : String)
-  
-  class AccessDataParser {
-    private val LogEntrySD = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+)\s+(\d+).*""".r
-    private val LogEntryS = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+).*""".r
-    private val dateParser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z")
-    private val dateParserFr = dateParser.withLocale(Locale.FRENCH)
-    private val dateParserEn = dateParser.withLocale(Locale.ENGLISH)
-  
-    
-    def parse(line : String) : Either[Option[String], AccessData] = {
-      line match {
-        case LogEntrySD(host, identUser, authUser, date, method, url, protocol, status, size, duration) =>
-          Right(AccessData(host, toDateTime(date), method, url, status, toLong(size), Option(duration).map(toLong)))
-        case LogEntryS(host, identUser, authUser, date, method, url, protocol, status, size) =>
-          Right(AccessData(host, toDateTime(date), method, url, status, toLong(size), None))
-        case s if s.trim().length == 0 =>
-          Left(None) // ignore empty line
-        case s =>
-          Left(Some("bad format : " + s))
-      }
-    }
-    
-    private def toDateTime(s : String) : DateTime = {
-      try {
-        dateParserFr.parseDateTime(s).withZone(DateTimeZone.UTC)
-      } catch {
-        case t : IllegalArgumentException => dateParserEn.parseDateTime(s).withZone(DateTimeZone.UTC)
-      }
-    }
-    
-    private def toLong(s : String) = try {
-      if (s != "-") s.toLong else 0
-    } catch {
-      case t => 0
-    }
-  
-  }
   
   def main(args: Array[String]): Unit = {
     val outputRoot = new File(System.getProperty("stats_http.data", "/var/log/stats_http/data"))
     outputRoot.mkdirs()
-    val statistics4size = new Statistics()
-    val statistics4duration = new Statistics()
     val parser = new AccessDataParser()
+    val s4sd = new Statistics4SizeAndDuration()
     for (
       path <- args ;
       line <- Source.fromFile(new File(path), "UTF-8").getLines()
     ) {
-      parser.parse(line) match {
-        case Right(data) => analyze(statistics4size, statistics4duration, data)
-        case Left(None) => ()
-        case Left(Some(msg)) => println("WARN " + path + " " + msg)
-      }
+      analyze(s4sd, parser, line, path)
     }
-    storeInJsonFiles(outputRoot, MetricInfo("http_size", "B"), statistics4size.data)
-    storeInJsonFiles(outputRoot, MetricInfo("http_duration", "microsecond"), statistics4duration.data)
+    storeInJsonFiles(outputRoot, MetricInfo("http_size", "B"), s4sd.size.data)
+    storeInJsonFiles(outputRoot, MetricInfo("http_duration", "microsecond"), s4sd.duration.data)
   }
 
-
-  def analyze(statistics4size : Statistics, statistics4duration : Statistics, data : AccessData) = {
-    val path = data.url.indexOf("?") match {
-      case -1 => data.url
-      case pos => data.url.substring(0, pos) + "?..."
+  def analyze(s4sd : Statistics4SizeAndDuration, parser : AccessDataParser, line : String, path : String) = {
+    parser.parse(line) match {
+      case Right(data) => s4sd.append(data)
+      case Left(None) => ()
+      case Left(Some(msg)) => println("WARN " + path + " " + msg)
     }
-    val key = data.status + " - " + path
-    statistics4size.append(key, data.size, data.timestamp)
-    data.duration.foreach{ d => statistics4duration.append(key, d, data.timestamp) }
   }
-
 
   def groupByDay(v: Iterable[Statistic]) : Map[ReadableInstant, Iterable[Statistic]] = v.groupBy { _.interval.getStart.toDateMidnight() }
   def groupByMonth(v: Iterable[Statistic]) : Map[ReadableInstant, Iterable[Statistic]] = v.groupBy { _.interval.getStart.toDateMidnight().withDayOfMonth(1) }
@@ -140,6 +92,51 @@ object StatsFromHttpAccess {
     storeInFileBy(data, monthPath, monthInterval, groupByMonth).foreach{ f => println("update "  + f) }
   }
 
+  case class AccessData(host : String, timestamp : DateTime, method : String, urlpath : String, status : String, size : Long, duration : Option[Long])
+  case class MetricInfo(name : String, unit : String)
+  
+  class AccessDataParser {
+    private val LogEntrySD = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+)\s+(\d+).*""".r
+    private val LogEntryS = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+).*""".r
+    private val dateParser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z")
+    private val dateParserFr = dateParser.withLocale(Locale.FRENCH)
+    private val dateParserEn = dateParser.withLocale(Locale.ENGLISH)
+  
+    
+    def parse(line : String) : Either[Option[String], AccessData] = {
+      line match {
+        case LogEntrySD(host, identUser, authUser, date, method, url, protocol, status, size, duration) =>
+          Right(AccessData(host, toDateTime(date), method, toCompactUrl(url), status, toLong(size), Option(duration).map(toLong)))
+        case LogEntryS(host, identUser, authUser, date, method, url, protocol, status, size) =>
+          Right(AccessData(host, toDateTime(date), method, toCompactUrl(url), status, toLong(size), None))
+        case s if s.trim().length == 0 =>
+          Left(None) // ignore empty line
+        case s =>
+          Left(Some("bad format : " + s))
+      }
+    }
+    
+    private def toDateTime(s : String) : DateTime = {
+      try {
+        dateParserFr.parseDateTime(s).withZone(DateTimeZone.UTC)
+      } catch {
+        case t : IllegalArgumentException => dateParserEn.parseDateTime(s).withZone(DateTimeZone.UTC)
+      }
+    }
+    
+    private def toLong(s : String) = try {
+      if (s != "-") s.toLong else 0
+    } catch {
+      case t => 0
+    }
+    
+    private def toCompactUrl(url : String) = url.indexOf("?") match {
+      case -1 => url
+      case pos => url.substring(0, pos) + "?..."
+    }
+
+  }
+
   case class Statistic(interval: Interval, key: String, min: Long = Long.MinValue, max: Long = Long.MaxValue, total: Long = 0, nb: Long = 0) {
     def avg: Long = nb match {
       case 0 => 0
@@ -176,4 +173,17 @@ object StatsFromHttpAccess {
 
     def data = _data.values
   }
+  
+  class Statistics4SizeAndDuration() {
+    val size = new Statistics()
+    val duration = new Statistics()
+    
+    def append(data : AccessData) = {
+      val key = data.status + " - " + data.urlpath
+      size.append(key, data.size, data.timestamp)
+      data.duration.foreach{ d => duration.append(key, d, data.timestamp) }
+    }
+  
+  }
+
 }
