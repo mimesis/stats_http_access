@@ -2,6 +2,7 @@ import sbt._
 
 class Project(info: ProjectInfo) extends AppOnlyProject(info) with MimesisRepository{
   val jodaTime = "joda-time" % "joda-time" % "1.6.2"
+  val specs2 = "org.specs2" %% "specs2" % "1.4" % "test"
 
 //  val zipArtifact = Artifact(artifactID, "zip", "zip")
 //  val product = outputPath / (artifactID + "-" + version + ".zip")
@@ -27,6 +28,9 @@ class Project(info: ProjectInfo) extends AppOnlyProject(info) with MimesisReposi
 
   lazy val packageApp = packageAppAction
   override def packageAction = packageAppAction dependsOn(super.packageAction)
+
+  def specs2Framework = new TestFramework("org.specs2.runner.SpecsFramework")
+  override def testFrameworks = super.testFrameworks ++ Seq(specs2Framework)
 }
 
 import collection.immutable.Set._
