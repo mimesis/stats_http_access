@@ -16,6 +16,7 @@ import java.util.Date
 import scala.collection.immutable.Map
 import scala.io.Source
 import java.io.File
+import org.joda.time.DateTimeFieldType
 
 object StatsFromHttpAccess {
 
@@ -55,7 +56,7 @@ object StatsFromHttpAccess {
 //  }
 
 
-  def storeInJsonFiles(root : File, metric : MetricInfo, data : Iterable[Statistic]) {
+  def storeInJsonFiles(root : File, metric : MetricInfo, data : Iterable[List[Statistic]]) {
     def storeInFile(f : File, stats : Iterable[Statistic], interval : String) : File = {
       val formatter = ISODateTimeFormat.dateTime()
       val jsonStats = for ( stat <- stats.toList) yield {
@@ -77,7 +78,7 @@ object StatsFromHttpAccess {
       f
     }
 
-    def storeInFileBy(data : Iterable[Statistic], formatterPath : DateTimeFormatter, formatterInterval : DateTimeFormatter, groupBy: Iterable[Statistic] => Map[ReadableInstant, Iterable[Statistic]]) : Iterable[File] = {
+    def storeInFileBy(data : Iterable[List[Statistic]], formatterPath : DateTimeFormatter, formatterInterval : DateTimeFormatter) : Iterable[File] = {
       for (
         (instant, stats) <- groupBy(data)
       ) yield storeInFile(new File(root, formatterPath.print(instant) + "/" + metric.name + ".json"), stats, formatterInterval.print(instant))
@@ -89,7 +90,7 @@ object StatsFromHttpAccess {
     val monthInterval = DateTimeFormat.forPattern("yyyy-MM")
 
     storeInFileBy(data, dayPath, dayInterval, groupByDay).foreach{ f => println("update "  + f) }
-    storeInFileBy(data, monthPath, monthInterval, groupByMonth).foreach{ f => println("update "  + f) }
+    //storeInFileBy(data, monthPath, monthInterval, groupByMonth).foreach{ f => println("update "  + f) }
   }
 
   case class AccessData(host : String, timestamp : DateTime, method : String, urlpath : String, status : String, size : Long, duration : Option[Long])
@@ -138,6 +139,7 @@ object StatsFromHttpAccess {
   }
 
   case class Statistic(interval: Interval, key: String, min: Long = Long.MinValue, max: Long = Long.MaxValue, total: Long = 0, nb: Long = 0) {
+    
     def avg: Long = nb match {
       case 0 => 0
       case _ => total / nb
@@ -165,10 +167,24 @@ object StatsFromHttpAccess {
   }
 
   class Statistics() {
-    private var _data = Map.empty[String, Statistic]
+    private var _data = Map.empty[(String, DateMidnight), Statistic] // one Statistic per day
 
+    private def sameMonth(interval : Interval, timestamp : ReadableInstant) : Boolean = {
+      /*s.interval.contains(timestamp)*/
+      interval.getStart.getMonthOfYear() == timestamp.get(DateTimeFieldType.monthOfYear) && interval.getStart.getYear() == timestamp.get(DateTimeFieldType.year)
+    }
+    
     def append(key: String, v: Long, timestamp: ReadableInstant) {
-      _data = _data + ((key, _data.getOrElse(key, { Statistic(new Interval(timestamp, timestamp), key) }).append(v, timestamp)))
+// TOFIX      
+//      val stats = _data.getOrElse(key, Nil)
+//      val (inside, outside) = stats.partition{ s => sameMonth(s.interval, timestamp)}
+//      val list = inside match {
+//        case Nil => Statistic(new Interval(timestamp, timestamp), key).append(v, timestamp) :: outside
+//        case head :: Nil => head.append(v, timestamp) :: outside
+//        case t => /*IllegalStateException*/ t.reduceLeft((acc,v) => acc.append(v)) :: outside //TODO continue to implements
+//      }
+//        { )
+//      _data = _data + ((key, )
     }
 
     def data = _data.values
