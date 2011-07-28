@@ -1,5 +1,6 @@
 package com.mimesis.monitor.stats
 
+import org.joda.time.DateMidnight
 import java.util.Locale
 import org.joda.time.format.ISODateTimeFormat
 import java.io.FileOutputStream
@@ -20,7 +21,7 @@ import org.joda.time.DateTimeFieldType
 
 object StatsFromHttpAccess {
 
-  
+
   def main(args: Array[String]): Unit = {
     val outputRoot = new File(System.getProperty("stats_http.data", "/var/log/stats_http/data"))
     outputRoot.mkdirs()
@@ -56,7 +57,7 @@ object StatsFromHttpAccess {
 //  }
 
 
-  def storeInJsonFiles(root : File, metric : MetricInfo, data : Iterable[List[Statistic]]) {
+  def storeInJsonFiles(root : File, metric : MetricInfo, data : Iterable[Statistic]) {
     def storeInFile(f : File, stats : Iterable[Statistic], interval : String) : File = {
       val formatter = ISODateTimeFormat.dateTime()
       val jsonStats = for ( stat <- stats.toList) yield {
@@ -78,7 +79,11 @@ object StatsFromHttpAccess {
       f
     }
 
-    def storeInFileBy(data : Iterable[List[Statistic]], formatterPath : DateTimeFormatter, formatterInterval : DateTimeFormatter) : Iterable[File] = {
+    def storeInFileBy(
+      data : Iterable[Statistic],
+      formatterPath : DateTimeFormatter,
+      formatterInterval : DateTimeFormatter,
+      groupBy: Iterable[Statistic] => Map[ReadableInstant, Iterable[Statistic]]) : Iterable[File] = {
       for (
         (instant, stats) <- groupBy(data)
       ) yield storeInFile(new File(root, formatterPath.print(instant) + "/" + metric.name + ".json"), stats, formatterInterval.print(instant))
@@ -90,20 +95,20 @@ object StatsFromHttpAccess {
     val monthInterval = DateTimeFormat.forPattern("yyyy-MM")
 
     storeInFileBy(data, dayPath, dayInterval, groupByDay).foreach{ f => println("update "  + f) }
-    //storeInFileBy(data, monthPath, monthInterval, groupByMonth).foreach{ f => println("update "  + f) }
+    storeInFileBy(data, monthPath, monthInterval, groupByMonth).foreach{ f => println("update "  + f) }
   }
 
   case class AccessData(host : String, timestamp : DateTime, method : String, urlpath : String, status : String, size : Long, duration : Option[Long])
   case class MetricInfo(name : String, unit : String)
-  
+
   class AccessDataParser {
     private val LogEntrySD = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+)\s+(\d+).*""".r
     private val LogEntryS = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+).*""".r
     private val dateParser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z")
     private val dateParserFr = dateParser.withLocale(Locale.FRENCH)
     private val dateParserEn = dateParser.withLocale(Locale.ENGLISH)
-  
-    
+
+
     def parse(line : String) : Either[Option[String], AccessData] = {
       line match {
         case LogEntrySD(host, identUser, authUser, date, method, url, protocol, status, size, duration) =>
@@ -116,7 +121,7 @@ object StatsFromHttpAccess {
           Left(Some("bad format : " + s))
       }
     }
-    
+
     private def toDateTime(s : String) : DateTime = {
       try {
         dateParserFr.parseDateTime(s).withZone(DateTimeZone.UTC)
@@ -124,13 +129,13 @@ object StatsFromHttpAccess {
         case t : IllegalArgumentException => dateParserEn.parseDateTime(s).withZone(DateTimeZone.UTC)
       }
     }
-    
+
     private def toLong(s : String) = try {
       if (s != "-") s.toLong else 0
     } catch {
       case t => 0
     }
-    
+
     private def toCompactUrl(url : String) = url.indexOf("?") match {
       case -1 => url
       case pos => url.substring(0, pos) + "?..."
@@ -138,8 +143,9 @@ object StatsFromHttpAccess {
 
   }
 
+
   case class Statistic(interval: Interval, key: String, min: Long = Long.MinValue, max: Long = Long.MaxValue, total: Long = 0, nb: Long = 0) {
-    
+
     def avg: Long = nb match {
       case 0 => 0
       case _ => total / nb
@@ -166,40 +172,33 @@ object StatsFromHttpAccess {
     }
   }
 
+
   class Statistics() {
-    private var _data = Map.empty[(String, DateMidnight), Statistic] // one Statistic per day
+    private var _data = Map.empty[String, Map[Int, Statistic]] // one Statistic per day
 
-    private def sameMonth(interval : Interval, timestamp : ReadableInstant) : Boolean = {
-      /*s.interval.contains(timestamp)*/
-      interval.getStart.getMonthOfYear() == timestamp.get(DateTimeFieldType.monthOfYear) && interval.getStart.getYear() == timestamp.get(DateTimeFieldType.year)
-    }
-    
     def append(key: String, v: Long, timestamp: ReadableInstant) {
-// TOFIX      
-//      val stats = _data.getOrElse(key, Nil)
-//      val (inside, outside) = stats.partition{ s => sameMonth(s.interval, timestamp)}
-//      val list = inside match {
-//        case Nil => Statistic(new Interval(timestamp, timestamp), key).append(v, timestamp) :: outside
-//        case head :: Nil => head.append(v, timestamp) :: outside
-//        case t => /*IllegalStateException*/ t.reduceLeft((acc,v) => acc.append(v)) :: outside //TODO continue to implements
-//      }
-//        { )
-//      _data = _data + ((key, )
+      val day = timestamp.get(DateTimeFieldType.dayOfYear)
+      val perdayStats = _data.getOrElse(key, Map.empty[Int, Statistic])
+      val dayStat = perdayStats.get(day).getOrElse(Statistic(new Interval(timestamp, timestamp), key))
+      val newDayStat = dayStat.append(v, timestamp)
+      val newPerDayStats = perdayStats + (day -> newDayStat)
+
+      _data += ( key -> newPerDayStats)
     }
 
-    def data = _data.values
+    def data : Iterable[Statistic] = _data.values.flatMap(_.values)
   }
-  
+
   class Statistics4SizeAndDuration() {
     val size = new Statistics()
     val duration = new Statistics()
-    
+
     def append(data : AccessData) = {
       val key = data.status + " - " + data.urlpath
       size.append(key, data.size, data.timestamp)
       data.duration.foreach{ d => duration.append(key, d, data.timestamp) }
     }
-  
+
   }
 
 }

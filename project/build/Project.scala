@@ -3,6 +3,7 @@ import sbt._
 class Project(info: ProjectInfo) extends AppOnlyProject(info) with MimesisRepository{
   val jodaTime = "joda-time" % "joda-time" % "1.6.2"
   val specs2 = "org.specs2" %% "specs2" % "1.4" % "test"
+  val lift_json = "net.liftweb" %% "lift-json" % "2.3.1" % "test"
 
 //  val zipArtifact = Artifact(artifactID, "zip", "zip")
 //  val product = outputPath / (artifactID + "-" + version + ".zip")
