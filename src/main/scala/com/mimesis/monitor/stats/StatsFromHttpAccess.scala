@@ -174,19 +174,18 @@ object StatsFromHttpAccess {
 
 
   class Statistics() {
-    private var _data = Map.empty[String, Map[Int, Statistic]] // one Statistic per day
+    private var _data = Map.empty[(String, Int), Statistic] // one Statistic per day
 
     def append(key: String, v: Long, timestamp: ReadableInstant) {
       val day = timestamp.get(DateTimeFieldType.dayOfYear)
-      val perdayStats = _data.getOrElse(key, Map.empty[Int, Statistic])
-      val dayStat = perdayStats.get(day).getOrElse(Statistic(new Interval(timestamp, timestamp), key))
-      val newDayStat = dayStat.append(v, timestamp)
-      val newPerDayStats = perdayStats + (day -> newDayStat)
+      val index = (key, day)
+      val stat = _data.getOrElse(index, Statistic(new Interval(timestamp, timestamp), key))
+      val newStat = stat.append(v, timestamp)
 
-      _data += ( key -> newPerDayStats)
+      _data += ( index -> newStat)
     }
 
-    def data : Iterable[Statistic] = _data.values.flatMap(_.values)
+    def data : Iterable[Statistic] = _data.values
   }
 
   class Statistics4SizeAndDuration() {
