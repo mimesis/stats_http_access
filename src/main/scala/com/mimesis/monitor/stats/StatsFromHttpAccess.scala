@@ -122,7 +122,7 @@ object StatsFromHttpAccess {
       }
     }
 
-    private def toDateTime(s : String) : DateTime = {
+    private[stats] def toDateTime(s : String) : DateTime = {
       try {
         dateParserFr.parseDateTime(s).withZone(DateTimeZone.UTC)
       } catch {
@@ -138,7 +138,11 @@ object StatsFromHttpAccess {
 
     private def toCompactUrl(url : String) = url.indexOf("?") match {
       case -1 => url
-      case pos => url.substring(0, pos) + "?..."
+      case pos => {
+        val tokeep = "utm_campaign="
+        val campain = url.substring(pos+1).split('&').find{ x => x.length > tokeep.length && x.startsWith(tokeep)}.getOrElse("");
+        url.substring(0, pos) + "?" + campain + "..."
+      }
     }
 
   }
