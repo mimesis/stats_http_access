@@ -31,4 +31,4 @@ project/plugins/project
 
 # temp file
 .*~
-
+.cache
