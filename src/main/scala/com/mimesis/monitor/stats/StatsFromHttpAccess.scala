@@ -24,8 +24,9 @@ object StatsFromHttpAccess {
 
   def main(args: Array[String]): Unit = {
     val outputRoot = new File(System.getProperty("stats_http.data", "/var/log/stats_http/data"))
+    val qparamsToKeep = System.getProperty("stats_http.qparams.tokeep", "").split('&')
     outputRoot.mkdirs()
-    val parser = new AccessDataParser()
+    val parser = new AccessDataParser(qparamsToKeep)
     val s4sd = new Statistics4SizeAndDuration()
     for (
       path <- args ;
@@ -101,7 +102,7 @@ object StatsFromHttpAccess {
   case class AccessData(host : String, timestamp : DateTime, method : String, urlpath : String, status : String, size : Long, duration : Option[Long])
   case class MetricInfo(name : String, unit : String)
 
-  class AccessDataParser {
+  class AccessDataParser(queryParamsToKeep : Array[String]) {
     private val LogEntrySD = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+)\s+(\d+).*""".r
     private val LogEntryS = """^(\S+)\s+(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+"(\S+)\s+(\S+)\s+(\S+)"\s+(\S+)\s+(\S+).*""".r
     private val dateParser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z")
@@ -110,11 +111,12 @@ object StatsFromHttpAccess {
 
 
     def parse(line : String) : Either[Option[String], AccessData] = {
+      val queryParamsToKeepE = queryParamsToKeep.map( _ + "=");
       line match {
         case LogEntrySD(host, identUser, authUser, date, method, url, protocol, status, size, duration) =>
-          Right(AccessData(host, toDateTime(date), method, toCompactUrl(url), status, toLong(size), Option(duration).map(toLong)))
+          Right(AccessData(host, toDateTime(date), method, toCompactUrl(url, queryParamsToKeepE), status, toLong(size), Option(duration).map(toLong)))
         case LogEntryS(host, identUser, authUser, date, method, url, protocol, status, size) =>
-          Right(AccessData(host, toDateTime(date), method, toCompactUrl(url), status, toLong(size), None))
+          Right(AccessData(host, toDateTime(date), method, toCompactUrl(url, queryParamsToKeepE), status, toLong(size), None))
         case s if s.trim().length == 0 =>
           Left(None) // ignore empty line
         case s =>
@@ -136,12 +138,16 @@ object StatsFromHttpAccess {
       case t => 0
     }
 
-    private def toCompactUrl(url : String) = url.indexOf("?") match {
+    private def toCompactUrl(url : String, queryParamsToKeep : Array[String]) = url.indexOf("?") match {
       case -1 => url
       case pos => {
-        val tokeep = "utm_campaign="
-        val campain = url.substring(pos+1).split('&').find{ x => x.length > tokeep.length && x.startsWith(tokeep)}.getOrElse("");
-        url.substring(0, pos) + "?" + campain + "..."
+        val nvs = url.substring(pos+1).split('&');
+        val query : Array[String] = for {
+          tokeep <- queryParamsToKeep
+          nv <- nvs
+          if nv.length > tokeep.length && nv.startsWith(tokeep)
+        } yield nv
+        url.substring(0, pos) + query.mkString("?", "&", "...")
       }
     }
 

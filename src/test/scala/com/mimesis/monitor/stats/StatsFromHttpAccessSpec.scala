@@ -13,7 +13,7 @@ import org.specs2.execute.Failure
 class StatsFromHttpAccessSpec extends Specification {
 
   implicit val formats = DefaultFormats
-  val parser = new AccessDataParser()
+  val parser = new AccessDataParser(Array("utm_campaign", "foo"))
 
   implicit def fileToExtFile(file : File) = new {
     def /(path : String) = new File(file, path)
@@ -48,7 +48,7 @@ class StatsFromHttpAccessSpec extends Specification {
         ,AccessData("81.252.204.221", parser.toDateTime("12/Jul/2011:11:04:19 +0000"), "GET", "/shared/js-user-data", "200", 1266, Some(140949))
       )
     }
-    "parse http access log with utm_campaign" in  {
+    "parse http access log with query param to keep" in  {
       equalsAD(parser
         ,"""81.252.204.221 - - [12/Jul/2011:11:04:19 +0000] "GET /shared/js-user-data HTTP/1.1" 200 1266 140949 "http://www.platform.content.bmnation.net/rooms" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Ubuntu/11.04 Chromium/12.0.742.112 Chrome/12.0.742.112 Safari/534.30""""
         ,AccessData("81.252.204.221", parser.toDateTime("12/Jul/2011:11:04:19 +0000"), "GET", "/shared/js-user-data", "200", 1266, Some(140949))
@@ -69,6 +69,16 @@ class StatsFromHttpAccessSpec extends Specification {
         ,"""81.252.204.221 - - [12/Jul/2011:11:04:19 +0000] "GET /shared/js-user-data?utm_campaign=toto HTTP/1.1" 200 1266 140949 "http://www.platform.content.bmnation.net/rooms" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Ubuntu/11.04 Chromium/12.0.742.112 Chrome/12.0.742.112 Safari/534.30""""
         ,AccessData("81.252.204.221", parser.toDateTime("12/Jul/2011:11:04:19 +0000"), "GET", "/shared/js-user-data?utm_campaign=toto...", "200", 1266, Some(140949))
       )
+    }
+    "parse http access log with query param to keep order from config" in  {
+      equalsAD(parser
+        ,"""81.252.204.221 - - [12/Jul/2011:11:04:19 +0000] "GET /shared/js-user-data?utm_campaign=toto&foo=33 HTTP/1.1" 200 1266 140949 "http://www.platform.content.bmnation.net/rooms" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Ubuntu/11.04 Chromium/12.0.742.112 Chrome/12.0.742.112 Safari/534.30""""
+        ,AccessData("81.252.204.221", parser.toDateTime("12/Jul/2011:11:04:19 +0000"), "GET", "/shared/js-user-data?utm_campaign=toto&foo=33...", "200", 1266, Some(140949))
+      )      
+      equalsAD(parser
+        ,"""81.252.204.221 - - [12/Jul/2011:11:04:19 +0000] "GET /shared/js-user-data?foo=33&utm_campaign=toto HTTP/1.1" 200 1266 140949 "http://www.platform.content.bmnation.net/rooms" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Ubuntu/11.04 Chromium/12.0.742.112 Chrome/12.0.742.112 Safari/534.30""""
+        ,AccessData("81.252.204.221", parser.toDateTime("12/Jul/2011:11:04:19 +0000"), "GET", "/shared/js-user-data?utm_campaign=toto&foo=33...", "200", 1266, Some(140949))
+      )      
     }
     "generate separate files for 2 different days" in {
       val outputRoot = createOutputRoot("test2days")
